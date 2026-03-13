@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia Completo - Upload Google Drive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-primary: #08090d;
+      --bg-secondary: #0f1117;
+      --bg-card: #151820;
+      --bg-code: #0d0f14;
+      --fg-primary: #e4e4e9;
+      --fg-secondary: #9ca3af;
+      --fg-muted: #5c6370;
+      --accent: #10b981;
+      --accent-dim: #059669;
+      --accent-glow: rgba(16, 185, 129, 0.25);
+      --border: #1e2330;
+      --border-light: #2a3142;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      margin: 0;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* Background Effects */
+    .bg-pattern {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(16, 185, 129, 0.08), transparent 50%),
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.05), transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(16, 185, 129, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Container */
+    .main-container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 4rem;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeUp 0.8s ease forwards;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+    .header-badge svg { width: 16px; height: 16px; }
+
+    .page-title {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    .page-title span {
+      background: linear-gradient(135deg, var(--accent), #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-subtitle {
+      font-size: 1.1rem;
+      color: var(--fg-secondary);
+      margin: 0 auto;
+      max-width: 600px;
+    }
+
+    /* Progress Bar */
+    .reading-progress {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--bg-secondary);
+      z-index: 100;
+    }
+    .reading-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #34d399);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar-nav {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 1rem;
+      z-index: 50;
+      display: none;
+    }
+    @media (min-width: 1200px) { .sidebar-nav { display: block; } }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: var(--fg-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .nav-item:hover { color: var(--fg-secondary); }
+    .nav-item.active { color: var(--accent); }
+    .nav-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: all 0.2s ease;
+    }
+    .nav-item.active .nav-dot {
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Sections */
+    .guide-section {
+      margin-bottom: 3rem;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease;
+    }
+    .guide-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-number {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--bg-primary);
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    /* Card */
+    .content-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .content-card p { margin: 0 0 1rem; color: var(--fg-secondary); }
+    .content-card p:last-child { margin-bottom: 0; }
+
+    /* Code Block */
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    .code-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+    }
+    .code-label svg { width: 16px; height: 16px; }
+    
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--fg-muted);
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .copy-btn.copied {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .copy-btn svg { width: 14px; height: 14px; }
+
+    .code-content {
+      padding: 1rem;
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .code-content pre {
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--fg-primary);
+      white-space: pre;
+    }
+
+    /* Alert Box */
+    .alert-box {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+    .alert-box.info { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .alert-box.warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .alert-box.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+    
+    .alert-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+    .alert-box.info .alert-icon { color: var(--info); }
+    .alert-box.warning .alert-icon { color: var(--warning); }
+    .alert-box.success .alert-icon { color: var(--accent); }
+    
+    .alert-content { flex: 1; }
+    .alert-title { font-weight: 600; margin-bottom: 0.25rem; }
+    .alert-box.info .alert-title { color: var(--info); }
+    .alert-box.warning .alert-title { color: var(--warning); }
+    .alert-box.success .alert-title { color: var(--accent); }
+    .alert-text { font-size: 0.9rem; color: var(--fg-secondary); margin: 0; }
+
+    /* Steps List */
+    .steps-list { list-style: none; padding: 0; margin: 0; }
+    .steps-list li {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .steps-list li:last-child { border-bottom: none; }
+    .list-number {
+      width: 28px; height: 28px;
+      background: rgba(16, 185, 129, 0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .list-content { flex: 1; }
+    .list-content strong { color: var(--fg-primary); }
+    .list-content p { margin: 0.5rem 0 0; color: var(--fg-secondary); font-size: 0.95rem; }
+
+    /* Final Card */
+    .final-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+    }
+    .final-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: bounce 2s ease infinite;
+    }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .final-icon svg { width: 32px; height: 32px; color: var(--bg-primary); }
+    .final-title { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.75rem; }
+    .final-text { color: var(--fg-secondary); margin: 0 0 1.5rem; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border: none;
+      border-radius: 10px;
+      color: var(--bg-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- Reading Progress -->
+  <div class="reading-progress">
+    <div class="reading-progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar-nav" id="sidebarNav">
+    <a class="nav-item active" data-section="0"><span class="nav-dot"></span><span>Intro</span></a>
+    <a class="nav-item" data-section="1"><span class="nav-dot"></span><span>Backend</span></a>
+    <a class="nav-item" data-section="2"><span class="nav-dot"></span><span>Frontend</span></a>
+    <a class="nav-item" data-section="3"><span class="nav-dot"></span><span>Manifesto</span></a>
+    <a class="nav-item" data-section="4"><span class="nav-dot"></span><span>Deploy</span></a>
+  </nav>
+
+  <main class="main-container">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Tutorial Completo
+      </div>
+      <h1 class="page-title">Implementar Upload <span>Google Drive</span></h1>
+      <p class="page-subtitle">Sistema completo para arquivos grandes (+1GB), com barra de progresso, sem Google Cloud Console e sem login do usuario.</p>
+    </header>
+
+    <!-- Section 0: Intro -->
+    <section class="guide-section" id="section-0">
+      <div class="content-card">
+        <h3 style="margin: 0 0 1rem; font-size: 1.2rem;">O que voce vai criar</h3>
+        <p>Um sistema de upload professional com:</p>
+        <ul style="margin: 0; padding-left: 1.5rem; color: var(--fg-secondary);">
+          <li>Upload de arquivos ilimitado (Resumable Upload API)</li>
+          <li>Barra de progresso em tempo real</li>
+          <li>Interface Drag & Drop moderna</li>
+          <li>Zero configuracao de Cloud Console</li>
+          <li>Usuario final sem necessidade de login</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Section 1: Code.gs -->
+    <section class="guide-section" id="section-1">
+      <div class="section-header">
+        <div class="step-number">1</div>
+        <h2 class="section-title">Backend (Google Apps Script)</h2>
+      </div>
+
+      <div class="content-card">
+        <ol class="steps-list">
+          <li>
+            <div class="list-number">1</div>
+            <div class="list-content">
+              <strong>Acesse script.google.com</strong>
+              <p>E crie um novo projeto.</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">2</div>
+            <div class="list-content">
+              <strong>Cole o codigo abaixo</strong>
+              <p>Substitua o conteudo do arquivo Code.gs.</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">3</div>
+            <div class="list-content">
+              <strong>Altere o FOLDER_ID</strong>
+              <p>Coloque o ID da pasta do seu Google Drive onde os arquivos serao salvos.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-label">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            Code.gs
+          </div>
+          <button class="copy-btn" onclick="copyCode(this, 'code-gs')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Copiar
+          </button>
+        </div>
+        <div class="code-content">
+          <pre id="code-gs">// ==========================================
+// CONFIGURACAO: Coloque o ID da sua pasta aqui
+// ==========================================
+const FOLDER_ID = 'SEU_FOLDER_ID_AQUI'; 
+
+// Serve a pagina HTML principal
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Upload Drive')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// Retorna o token OAuth2 do script (permissao do proprietario)
+function getAccessToken() {
+  return ScriptApp.getOAuthToken();
+}
+
+// Retorna o ID da pasta configurada
+function getFolderId() {
+  return FOLDER_ID;
+}
+
+// Verifica se a pasta existe (util para debug)
+function verifyFolder() {
+  try {
+    const folder = DriveApp.getFolderById(FOLDER_ID);
+    return {
+      success: true,
+      name: folder.getName(),
+      id: folder.getId()
+    };
+  } catch (e) {
+    return {
+      success: false,
+      error: e.message
+    };
+  }
+}
+
+// Funcao fantasma para forcar escopo do Drive no manifesto
+function dummyFunction() {
+  DriveApp.getFolderById(FOLDER_ID);
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: index.html -->
+    <section class="guide-section" id="section-2">
+      <div class="section-header">
+        <div class="step-number">2</div>
+        <h2 class="section-title">Frontend (HTML + CSS + JS)</h2>
+      </div>
+
+      <div class="content-card">
+        <ol class="steps-list">
+          <li>
+            <div class="list-number">1</div>
+            <div class="list-content">
+              <strong>Crie um arquivo HTML</strong>
+              <p>No editor do Apps Script, clique no "+" e adicione um arquivo HTML chamado "index".</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">2</div>
+            <div class="list-content">
+              <strong>Cole o codigo completo abaixo</strong>
+              <p>Este codigo contem o estilo visual, a logica de upload resumable e a barra de progresso.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-label">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            index.html
+          </div>
+          <button class="copy-btn" onclick="copyCode(this, 'code-html')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Copiar
+          </button>
+        </div>
+        <div class="code-content">
+          <pre id="code-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-BR"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;Upload para Google Drive&lt;/title&gt;
+  &lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;
+  &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;
+  &lt;link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"&gt;
+  &lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+  &lt;style&gt;
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a24;
+      --fg-primary: #e8e8ed;
+      --fg-secondary: #8b8b99;
+      --fg-muted: #4a4a58;
+      --accent: #00d4aa;
+      --accent-dim: #00a88a;
+      --accent-glow: rgba(0, 212, 170, 0.3);
+      --border: #2a2a38;
+      --danger: #ff4757;
+      --success: #00d4aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    /* Background animado */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 212, 170, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 100, 200, 0.08), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Container principal */
+    .upload-container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* Card principal */
+    .upload-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 20px 50px rgba(0, 0, 0, 0.5),
+        0 0 100px var(--accent-glow);
+      transform: translateY(20px);
+      opacity: 0;
+      animation: cardEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes cardEnter {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Logo / Titulo */
+    .logo-section {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px var(--accent-glow);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 8px 32px var(--accent-glow); }
+      50% { box-shadow: 0 8px 48px var(--accent-glow), 0 0 80px var(--accent-glow); }
+    }
+
+    .logo-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--bg-primary);
+    }
+
+    .main-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--fg-secondary);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* Zona de drop */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      background: rgba(0, 212, 170, 0.02);
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, var(--accent-glow), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(0, 212, 170, 0.05);
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.drag-over::before {
+      opacity: 1;
+    }
+
+    .drop-zone.drag-over {
+      transform: scale(1.02);
+    }
+
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 1rem;
+      color: var(--fg-muted);
+      transition: all 0.3s ease;
+    }
+
+    .drop-zone:hover .drop-icon {
+      color: var(--accent);
+      transform: translateY(-4px);
+    }
+
+    .drop-text {
+      font-size: 1rem;
+      color: var(--fg-secondary);
+      margin: 0 0 0.5rem;
+      position: relative;
+    }
+
+    .drop-text strong {
+      color: var(--accent);
+    }
+
+    .drop-hint {
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+      position: relative;
+    }
+
+    /* Input file escondido */
+    .file-input {
+      display: none;
+    }
+
+    /* Lista de arquivos */
+    .file-list {
+      margin-top: 1.5rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--border);
+      animation: slideIn 0.3s ease forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .file-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 212, 170, 0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .file-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+      font-size: 0.8rem;
+      color: var(--fg-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .file-remove {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(255, 71, 87, 0.1);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .file-remove:hover {
+      background: rgba(255, 71, 87, 0.2);
+    }
+
+    .file-remove svg {
+      width: 16px;
+      height: 16px;
+      color: var(--danger);
+    }
+
+    /* Barra de progresso */
+    .progress-section {
+      margin-top: 2rem;
+      display: none;
+    }
+
+    .progress-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-label {
+      font-size: 0.9rem;
+      color: var(--fg-secondary);
+    }
+
+    .progress-percent {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--bg-secondary);
+      border-radius: 100px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+      border-radius: 100px;
+      width: 0%;
+      transition: width 0.2s ease;
+      position: relative;
+    }
+
+    .progress-bar-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 100px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100px); }
+      100% { transform: translateX(100px); }
+    }
+
+    .progress-status {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--fg-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Botao de upload */
+    .upload-btn {
+      width: 100%;
+      padding: 1rem 2rem;
+      margin-top: 2rem;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      color: var(--bg-primary);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .upload-btn.primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .upload-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .upload-btn.secondary {
+      background: var(--bg-secondary);
+      color: var(--fg-primary);
+      border: 1px solid var(--border);
+    }
+
+    .upload-btn.secondary:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(0, 212, 170, 0.05);
+    }
+
+    /* Status messages */
+    .status-message {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    .status-message.success {
+      display: flex;
+      background: rgba(0, 212, 170, 0.1);
+      border: 1px solid rgba(0, 212, 170, 0.3);
+      color: var(--success);
+    }
+
+    .status-message.error {
+      display: flex;
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      color: var(--danger);
+    }
+
+    /* Uploads concluidos */
+    .completed-list {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .completed-list.active {
+      display: block;
+    }
+
+    .completed-title {
+      font-size: 0.9rem;
+      color: var(--fg-secondary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .completed-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 212, 170, 0.05);
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .completed-item svg {
+      width: 18px;
+      height: 18px;
+      color: var(--success);
+      flex-shrink: 0;
+    }
+
+    .completed-item span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .upload-card {
+        padding: 2rem 1.5rem;
+      }
+
+      .main-title {
+        font-size: 1.5rem;
+      }
+
+      .drop-zone {
+        padding: 2rem 1.5rem;
+      }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-muted);
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Background elements --&gt;
+  &lt;div class="bg-grid"&gt;&lt;/div&gt;
+  &lt;div class="bg-gradient"&gt;&lt;/div&gt;
+
+  &lt;div class="upload-container"&gt;
+    &lt;div class="upload-card"&gt;
+      &lt;!-- Logo Section --&gt;
+      &lt;div class="logo-section"&gt;
+        &lt;div class="logo-icon"&gt;
+          &lt;svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+            &lt;path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /&gt;
+          &lt;/svg&gt;
+        &lt;/div&gt;
+        &lt;h1 class="main-title"&gt;Upload para Google Drive&lt;/h1&gt;
+        &lt;p class="subtitle"&gt;Arraste arquivos ou clique para selecionar&lt;/p&gt;
+      &lt;/div&gt;
+
+      &lt;!-- Drop Zone --&gt;
+      &lt;div class="drop-zone" id="dropZone"&gt;
+        &lt;svg class="drop-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"&gt;
+          &lt;path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /&gt;
+        &lt;/svg&gt;
+        &lt;p class="drop-text"&gt;&lt;strong&gt;Clique aqui&lt;/strong&gt; ou arraste arquivos&lt;/p&gt;
+        &lt;p class="drop-hint"&gt;Suporta arquivos de ate varios GB&lt;/p&gt;
+        &lt;input type="file" class="file-input" id="fileInput" multiple&gt;
+      &lt;/div&gt;
+
+      &lt;!-- File List --&gt;
+      &lt;div class="file-list" id="fileList"&gt;&lt;/div&gt;
+
+      &lt;!-- Progress Section --&gt;
+      &lt;div class="progress-section" id="progressSection"&gt;
+        &lt;div class="progress-header"&gt;
+          &lt;span class="progress-label" id="progressLabel"&gt;Enviando arquivo...&lt;/span&gt;
+          &lt;span class="progress-percent" id="progressPercent"&gt;0%&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div class="progress-bar-bg"&gt;
+          &lt;div class="progress-bar-fill" id="progressBar"&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;p class="progress-status" id="progressStatus"&gt;Iniciando upload...&lt;/p&gt;
+      &lt;/div&gt;
+
+      &lt;!-- Status Message --&gt;
+      &lt;div class="status-message" id="statusMessage"&gt;
+        &lt;svg id="statusIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+          &lt;path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /&gt;
+        &lt;/svg&gt;
+        &lt;span id="statusText"&gt;&lt;/span&gt;
+      &lt;/div&gt;
+
+      &lt;!-- Upload Button --&gt;
+      &lt;button class="upload-btn primary" id="uploadBtn" disabled&gt;
+        &lt;span id="btnText"&gt;Selecione arquivos para upload&lt;/span&gt;
+      &lt;/button&gt;
+
+      &lt;!-- Completed List --&gt;
+      &lt;div class="completed-list" id="completedList"&gt;
+        &lt;p class="completed-title"&gt;
+          &lt;svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+            &lt;path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /&gt;
+          &lt;/svg&gt;
+          Uploads concluidos
+        &lt;/p&gt;
+        &lt;div id="completedItems"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    // Estado da aplicacao
+    let selectedFiles = [];
+    let accessToken = null;
+    let folderId = null;
+    let isUploading = false;
+    let completedFiles = [];
+
+    // Elementos DOM
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressLabel = document.getElementById('progressLabel');
+    const progressStatus = document.getElementById('progressStatus');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const btnText = document.getElementById('btnText');
+    const statusMessage = document.getElementById('statusMessage');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusText = document.getElementById('statusText');
+    const completedList = document.getElementById('completedList');
+    const completedItems = document.getElementById('completedItems');
+
+    // Inicializacao
+    async function init() {
+      try {
+        // Obter token de acesso e folder ID
+        accessToken = await google.script.run.withSuccessHandler(onTokenReceived).getAccessToken();
+      } catch (e) {
+        showStatus('Erro ao inicializar: ' + e.message, 'error');
+      }
+    }
+
+    function onTokenReceived(token) {
+      accessToken = token;
+      google.script.run.withSuccessHandler(onFolderIdReceived).getFolderId();
+    }
+
+    function onFolderIdReceived(id) {
+      folderId = id;
+      console.log('Inicializado com sucesso. Folder ID:', folderId);
+    }
+
+    // Formatar tamanho de arquivo
+    function formatSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Event Listeners - Drop Zone
+    dropZone.addEventListener('click', () =&gt; fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) =&gt; {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () =&gt; {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) =&gt; {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) =&gt; {
+      handleFiles(e.target.files);
+    });
+
+    // Processar arquivos selecionados
+    function handleFiles(files) {
+      for (const file of files) {
+        if (!selectedFiles.some(f =&gt; f.name === file.name &amp;&amp; f.size === file.size)) {
+          selectedFiles.push(file);
+        }
+      }
+      renderFileList();
+      updateUploadButton();
+    }
+
+    // Renderizar lista de arquivos
+    function renderFileList() {
+      fileList.innerHTML = '';
+      
+      selectedFiles.forEach((file, index) =&gt; {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.style.animationDelay = `${index * 0.05}s`;
+        item.innerHTML = `
+          &lt;div class="file-icon"&gt;
+            &lt;svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+              &lt;path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /&gt;
+            &lt;/svg&gt;
+          &lt;/div&gt;
+          &lt;div class="file-info"&gt;
+            &lt;p class="file-name"&gt;${file.name}&lt;/p&gt;
+            &lt;p class="file-size"&gt;${formatSize(file.size)}&lt;/p&gt;
+          &lt;/div&gt;
+          &lt;button class="file-remove" onclick="removeFile(${index})" aria-label="Remover arquivo"&gt;
+            &lt;svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+              &lt;path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /&gt;
+            &lt;/svg&gt;
+          &lt;/button&gt;
+        `;
+        fileList.appendChild(item);
+      });
+    }
+
+    // Remover arquivo da lista
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+      updateUploadButton();
+    }
+
+    // Atualizar botao de upload
+    function updateUploadButton() {
+      if (selectedFiles.length === 0) {
+        uploadBtn.disabled = true;
+        btnText.textContent = 'Selecione arquivos para upload';
+      } else {
+        uploadBtn.disabled = isUploading;
+        const totalSize = selectedFiles.reduce((acc, f) =&gt; acc + f.size, 0);
+        btnText.textContent = `Enviar ${selectedFiles.length} arquivo${selectedFiles.length &gt; 1 ? 's' : ''} (${formatSize(totalSize)})`;
+      }
+    }
+
+    // Upload Button Click
+    uploadBtn.addEventListener('click', startUpload);
+
+    // Iniciar upload
+    async function startUpload() {
+      if (selectedFiles.length === 0 || isUploading) return;
+
+      isUploading = true;
+      uploadBtn.disabled = true;
+      statusMessage.className = 'status-message';
+      completedList.classList.remove('active');
+      
+      progressSection.classList.add('active');
+
+      for (let i = 0; i &lt; selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        progressLabel.textContent = `Enviando ${file.name}...`;
+        
+        try {
+          await uploadFile(file, i, selectedFiles.length);
+          completedFiles.push(file.name);
+        } catch (error) {
+          showStatus(`Erro ao enviar ${file.name}: ${error.message}`, 'error');
+          isUploading = false;
+          updateUploadButton();
+          return;
+        }
+      }
+
+      // Upload concluido
+      isUploading = false;
+      showStatus('Todos os arquivos foram enviados com sucesso!', 'success');
+      showCompletedFiles();
+      
+      selectedFiles = [];
+      fileList.innerHTML = '';
+      updateUploadButton();
+      
+      progressSection.classList.remove('active');
+    }
+
+    // Upload de arquivo individual (Resumable Upload)
+    async function uploadFile(file, index, total) {
+      return new Promise((resolve, reject) =&gt; {
+        // Iniciar sessao de upload resumable
+        const initiateUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable';
+        
+        const metadata = {
+          name: file.name,
+          parents: [folderId]
+        };
+
+        fetch(initiateUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(metadata)
+        })
+        .then(response =&gt; {
+          if (!response.ok) {
+            throw new Error('Falha ao iniciar upload');
+          }
+          const uploadUrl = response.headers.get('Location');
+          if (!uploadUrl) {
+            throw new Error('URL de upload nao recebida');
+          }
+          return uploadToUrl(uploadUrl, file);
+        })
+        .then(() =&gt; {
+          resolve();
+        })
+        .catch(error =&gt; {
+          reject(error);
+        });
+      });
+    }
+
+    // Upload para URL resumable
+    function uploadToUrl(uploadUrl, file) {
+      return new Promise((resolve, reject) =&gt; {
+        const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB por chunk
+        let uploadedBytes = 0;
+        
+        progressStatus.textContent = `Preparando upload...`;
+
+        function uploadChunk() {
+          const start = uploadedBytes;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+
+          fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Range': `bytes ${start}-${end - 1}/${file.size}`
+            },
+            body: chunk
+          })
+          .then(response =&gt; {
+            if (response.status === 200 || response.status === 201) {
+              // Upload completo
+              uploadedBytes = file.size;
+              updateProgress(uploadedBytes, file.size);
+              resolve();
+            } else if (response.status === 308) {
+              // Chunk recebido, continuar
+              uploadedBytes = end;
+              updateProgress(uploadedBytes, file.size);
+              progressStatus.textContent = `${formatSize(uploadedBytes)} de ${formatSize(file.size)} enviados`;
+              uploadChunk();
+            } else {
+              throw new Error(`Erro no upload: ${response.status}`);
+            }
+          })
+          .catch(error =&gt; {
+            // Tentar recuperar posicao
+            queryUploadStatus(uploadUrl, file)
+              .then(resolve)
+              .catch(() =&gt; reject(error));
+          });
+        }
+
+        uploadChunk();
+      });
+    }
+
+    // Consultar status do upload para retomar
+    function queryUploadStatus(uploadUrl, file) {
+      return new Promise((resolve, reject) =&gt; {
+        fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Range': `bytes */${file.size}`
+          }
+        })
+        .then(response =&gt; {
+          if (response.status === 308) {
+            const range = response.headers.get('Range');
+            if (range) {
+              const match = range.match(/bytes=(\d+)-/);
+              if (match) {
+                const uploadedBytes = parseInt(match[1]) + 1;
+                // Retomar upload
+                resumeUpload(uploadUrl, file, uploadedBytes, resolve, reject);
+                return;
+              }
+            }
+          }
+          reject(new Error('Nao foi possivel retomar upload'));
+        })
+        .catch(reject);
+      });
+    }
+
+    // Retomar upload
+    function resumeUpload(uploadUrl, file, startByte, resolve, reject) {
+      const CHUNK_SIZE = 8 * 1024 * 1024;
+      let uploadedBytes = startByte;
+
+      function uploadNextChunk() {
+        const start = uploadedBytes;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Range': `bytes ${start}-${end - 1}/${file.size}`
+          },
+          body: chunk
+        })
+        .then(response =&gt; {
+          if (response.status === 200 || response.status === 201) {
+            uploadedBytes = file.size;
+            updateProgress(uploadedBytes, file.size);
+            resolve();
+          } else if (response.status === 308) {
+            uploadedBytes = end;
+            updateProgress(uploadedBytes, file.size);
+            progressStatus.textContent = `${formatSize(uploadedBytes)} de ${formatSize(file.size)} enviados`;
+            uploadNextChunk();
+          } else {
+            reject(new Error(`Erro no upload: ${response.status}`));
+          }
+        })
+        .catch(reject);
+      }
+
+      uploadNextChunk();
+    }
+
+    // Atualizar barra de progresso
+    function updateProgress(uploaded, total) {
+      const percent = Math.round((uploaded / total) * 100);
+      progressBar.style.width = percent + '%';
+      progressPercent.textContent = percent + '%';
+    }
+
+    // Mostrar status
+    function showStatus(message, type) {
+      statusMessage.className = `status-message ${type}`;
+      statusText.textContent = message;
+      
+      if (type === 'success') {
+        statusIcon.innerHTML = '&lt;path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /&gt;';
+      } else {
+        statusIcon.innerHTML = '&lt;path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /&gt;';
+      }
+    }
+
+    // Mostrar arquivos concluidos
+    function showCompletedFiles() {
+      if (completedFiles.length === 0) return;
+      
+      completedList.classList.add('active');
+      completedItems.innerHTML = '';
+      
+      completedFiles.forEach(name =&gt; {
+        const item = document.createElement('div');
+        item.className = 'completed-item';
+        item.innerHTML = `
+          &lt;svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"&gt;
+            &lt;path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /&gt;
+          &lt;/svg&gt;
+          &lt;span&gt;${name}&lt;/span&gt;
+        `;
+        completedItems.appendChild(item);
+      });
+      
+      completedFiles = [];
+    }
+
+    // Inicializar ao carregar
+    google.script.run.withSuccessHandler(function(token) {
+      accessToken = token;
+      google.script.run.withSuccessHandler(function(id) {
+        folderId = id;
+        console.log('Sistema pronto para upload');
+      }).getFolderId();
+    }).getAccessToken();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Manifest -->
+    <section class="guide-section" id="section-3">
+      <div class="section-header">
+        <div class="step-number">3</div>
+        <h2 class="section-title">Manifesto (appsscript.json)</h2>
+      </div>
+
+      <div class="content-card">
+        <ol class="steps-list">
+          <li>
+            <div class="list-number">1</div>
+            <div class="list-content">
+              <strong>Ativar manifesto</strong>
+              <p>Va em "Configuracoes do projeto" (engrenagem) e marque "Mostrar arquivo de manifesto".</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">2</div>
+            <div class="list-content">
+              <strong>Edite o arquivo appsscript.json</strong>
+              <p>Substitua o conteudo pelo codigo abaixo.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-label">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            appsscript.json
+          </div>
+          <button class="copy-btn" onclick="copyCode(this, 'code-json')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Copiar
+          </button>
+        </div>
+        <div class="code-content">
+          <pre id="code-json">{
+  "timeZone": "America/Sao_Paulo",
+  "dependencies": {},
+  "webapp": {
+    "access": "ANYONE_ANONYMOUS",
+    "executeAs": "USER_DEPLOYING"
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ],
+  "runtimeVersion": "V8"
+}</pre>
+        </div>
+      </div>
+      
+      <div class="alert-box info">
+        <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div class="alert-content">
+          <div class="alert-title">Escopos e Acesso</div>
+          <p class="alert-text"><strong>ANYONE_ANONYMOUS</strong>: Qualquer pessoa com o link pode acessar sem login.<br><strong>USER_DEPLOYING</strong>: O script roda como VOCE, usando seu Drive e suas permissoes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Deploy -->
+    <section class="guide-section" id="section-4">
+      <div class="section-header">
+        <div class="step-number">4</div>
+        <h2 class="section-title">Implantar e Testar</h2>
+      </div>
+
+      <div class="content-card">
+        <ol class="steps-list">
+          <li>
+            <div class="list-number">1</div>
+            <div class="list-content">
+              <strong>Salvar</strong>
+              <p>Pressione Ctrl+S para salvar todos os arquivos.</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">2</div>
+            <div class="list-content">
+              <strong>Implantar</strong>
+              <p>Clique em "Implantar" &gt; "Novas implantacoes" &gt; Selecione "App da Web".</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">3</div>
+            <div class="list-content">
+              <strong>Configurar acesso</strong>
+              <p>Em "Quem pode acessar", selecione "Qualquer pessoa".</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">4</div>
+            <div class="list-content">
+              <strong>Autorizar</strong>
+              <p>Na primeira vez, autorize o acesso a sua conta Google. Se aparecer "App nao verificado", va em "Avancado" &gt; "Acessar (nao seguro)".</p>
+            </div>
+          </li>
+          <li>
+            <div class="list-number">5</div>
+            <div class="list-content">
+              <strong>Obter URL</strong>
+              <p>Copie a URL gerada. Esse e o link do seu sistema de upload!</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="final-card">
+        <div class="final-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+        </div>
+        <h2 class="final-title">Implementacao Concluida!</h2>
+        <p class="final-text">Seu sistema de upload professional esta pronto para uso.</p>
+        <a href="https://script.google.com" target="_blank" class="btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          Ir para o Apps Script
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Copy code function
+    function copyCode(btn, codeId) {
+      const codeElement = document.getElementById(codeId);
+      const text = codeElement.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Copiado!
+        `;
+        
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copiar
+          `;
+        }, 2000);
+      });
+    }
+
+    // Intersection Observer
+    const sections = document.querySelectorAll('.guide-section');
+    const navItems = document.querySelectorAll('.nav-item');
+    const progressFill = document.getElementById('progressFill');
+
+    const observerOptions = { root: null, rootMargin: '-20% 0px -70% 0px', threshold: 0 };
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          const sectionId = entry.target.id;
+          const sectionIndex = sectionId.split('-')[1];
+          navItems.forEach((item, index) => {
+            if (index === parseInt(sectionIndex)) { item.classList.add('active'); } 
+            else { item.classList.remove('active'); }
+          });
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach(section => sectionObserver.observe(section));
+
+    // Scroll progress
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = Math.max(0, Math.min(100, (scrollTop / docHeight) * 100));
+      progressFill.style.width = progress + '%';
+    }
+    window.addEventListener('scroll', updateProgress, { passive: true });
+
+    // Nav click
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const sectionIndex = item.dataset.section;
+        const targetSection = document.getElementById('section-' + sectionIndex);
+        if (targetSection) targetSection.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // Initial visibility
+    sections.forEach(section => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.8) section.classList.add('visible');
+    });
+  </script>
+</body>
+</html>
